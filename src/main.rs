@@ -1,14 +1,11 @@
 //! Executor
 //! ref: https://github.com/async-graphql/examples/blob/master/actix-web/starwars/src/main.rs
-
-use std::sync::Mutex;
+mod todo;
 
 use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
-use async_graphql::{
-    http::GraphiQLSource, EmptyMutation, EmptySubscription, Object, Schema, SimpleObject,
-};
+use async_graphql::{http::GraphiQLSource, EmptySubscription, Object, Schema};
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
-use once_cell::sync::Lazy;
+use todo::{Todo, TODOS, TODO_ID};
 
 struct Query;
 
@@ -36,7 +33,7 @@ impl Mutation {
             title,
             description,
         };
-        TODOS.lock().unwrap().push(todo.clone());
+        TODOS.lock().unwrap().push(todo);
         true
     }
 }
@@ -67,14 +64,4 @@ async fn main() -> std::io::Result<()> {
     .bind("0.0.0.0:8080")?
     .run()
     .await
-}
-
-static TODO_ID: Lazy<Mutex<usize>> = Lazy::new(|| Mutex::new(0));
-static TODOS: Lazy<Mutex<Vec<Todo>>> = Lazy::new(|| Mutex::new(vec![]));
-
-#[derive(SimpleObject, Clone)]
-struct Todo {
-    id: usize,
-    title: String,
-    description: String,
 }
