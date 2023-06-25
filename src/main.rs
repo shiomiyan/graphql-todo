@@ -5,7 +5,9 @@ mod todo;
 use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
 use async_graphql::{http::GraphiQLSource, EmptySubscription, Object, Schema};
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
+use rusqlite::named_params;
 use todo::{Todo, TODOS, TODO_ID};
+use tokio_rusqlite::Connection;
 
 struct Query;
 
@@ -13,11 +15,11 @@ struct Query;
 #[Object]
 impl Query {
     async fn total_todos(&self) -> usize {
-        TODOS.lock().unwrap().len()
+        TODOS.lock().await.len()
     }
 
     async fn all_todos(&self) -> Vec<Todo> {
-        TODOS.lock().unwrap().clone()
+        TODOS.lock().await.clone()
     }
 }
 
@@ -26,14 +28,19 @@ struct Mutation;
 #[Object]
 impl Mutation {
     async fn post_todo(&self, title: String, description: String) -> bool {
-        let mut id = TODO_ID.lock().unwrap();
+        let mut id = TODO_ID.lock().await;
         *id += 1;
-        let todo = Todo {
-            id: *id,
-            title,
-            description,
-        };
-        TODOS.lock().unwrap().push(todo);
+        //let todo = Todo {
+        //    id: *id,
+        //    title,
+        //    description,
+        //};
+        //TODOS.lock().unwrap().push(todo);
+        let mut conn = Connection::open("todo.db").await.unwrap();
+        insert_todo(&mut conn, *id, title, description)
+            .await
+            .unwrap();
+        conn.close().await.expect("Failed to close connection.");
         true
     }
 }
@@ -53,6 +60,12 @@ async fn index_graphiql() -> Result<HttpResponse> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let mut conn = Connection::open("todo.db").await.unwrap();
+    init_db(&mut conn)
+        .await
+        .expect("Failed to initialize database.");
+    conn.close().await.expect("Failed to close connection.");
+
     let schema = Schema::build(Query, Mutation, EmptySubscription).finish();
     println!("GraphiQL IDE is Running: http://localhost:8080");
     HttpServer::new(move || {
@@ -64,4 +77,41 @@ async fn main() -> std::io::Result<()> {
     .bind("0.0.0.0:8080")?
     .run()
     .await
+}
+
+async fn init_db(conn: &mut Connection) -> anyhow::Result<()> {
+    conn.call(|conn| {
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS todos (
+                id INTEGER NOT NULL PRIMARY KEY,
+                title NOT NULL,
+                description TEXT NOT NULL
+            );",
+            (),
+        )
+    })
+    .await
+    .expect("Failed to connect to database.");
+    Ok(())
+}
+
+async fn insert_todo(
+    conn: &mut Connection,
+    id: usize,
+    title: String,
+    description: String,
+) -> anyhow::Result<()> {
+    conn.call(move |conn| {
+        conn.execute(
+            "INSERT INTO todos (id, title, description) VALUES (:id, :title, :description)",
+            named_params! {
+                ":id": id,
+                ":title": &title,
+                ":description": &description,
+            },
+        )
+    })
+    .await
+    .expect("Failed to connect to database.");
+    Ok(())
 }
