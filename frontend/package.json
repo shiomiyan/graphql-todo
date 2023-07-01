@@ -1,0 +1,12 @@
+{
+	"name": "frontend",
+	"scripts": {
+		"dev": "imba -w src/index.html",
+		"start": "npm run dev",
+		"build": "imba build src/index.html",
+		"preview": "npx http-server dist"
+	},
+	"devDependencies": {
+		"imba": "^2.0.0-alpha.229"
+	}
+}
