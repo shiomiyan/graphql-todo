@@ -18,12 +18,16 @@ async fn main() -> std::io::Result<()> {
     let schema = Schema::build(todo::Query, todo::Mutation, EmptySubscription)
         .data(conn)
         .finish();
-    println!("GraphiQL IDE is Running: http://localhost:5036");
+    println!("GraphiQL IDE is Running: http://localhost:5036/playground");
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(schema.clone()))
-            .service(web::resource("/").guard(guard::Post()).to(index))
-            .service(web::resource("/").guard(guard::Get()).to(index_graphiql))
+            .service(web::resource("/graphql").guard(guard::Post()).to(index))
+            .service(
+                web::resource("/playground")
+                    .guard(guard::Get())
+                    .to(index_graphiql),
+            )
     })
     .bind("0.0.0.0:5036")?
     .run()

@@ -101,5 +101,5 @@ pub async fn index(schema: web::Data<TodoSchema>, req: GraphQLRequest) -> GraphQ
 pub async fn index_graphiql() -> actix_web::Result<HttpResponse> {
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
-        .body(GraphiQLSource::build().endpoint("/").finish()))
+        .body(GraphiQLSource::build().endpoint("/graphql").finish()))
 }
