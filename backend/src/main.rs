@@ -2,7 +2,14 @@
 //! ref: https://github.com/async-graphql/examples/blob/master/actix-web/starwars/src/main.rs
 mod todo;
 
-use actix_web::{guard, web, web::Data, App, HttpServer};
+use actix_cors::Cors;
+use actix_web::{
+    guard,
+    http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
+    web,
+    web::Data,
+    App, HttpServer,
+};
 use async_graphql::{EmptySubscription, Schema};
 use tokio_rusqlite::Connection;
 
@@ -21,6 +28,15 @@ async fn main() -> std::io::Result<()> {
     println!("GraphiQL IDE is Running: http://localhost:5036/playground");
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allowed_origin("http://localhost:3000")
+                    .allowed_origin("http://localhost:5036")
+                    .allowed_methods(vec!["GET", "POST"])
+                    .allowed_headers(vec![CONTENT_TYPE, AUTHORIZATION, ACCEPT])
+                    .supports_credentials()
+                    .max_age(3600),
+            )
             .app_data(Data::new(schema.clone()))
             .service(web::resource("/graphql").guard(guard::Post()).to(index))
             .service(
