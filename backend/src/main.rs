@@ -1,24 +1,23 @@
 //! Executor
 //! ref: https://github.com/async-graphql/examples/blob/master/actix-web/starwars/src/main.rs
-mod sqlite;
 mod todo;
 
 use actix_web::{guard, web, web::Data, App, HttpServer};
 use async_graphql::{EmptySubscription, Schema};
-use sqlite::init_db;
 use tokio_rusqlite::Connection;
 
 use crate::todo::{index, index_graphiql};
 
+const SQLITE_DB_FILE: &str = "todo.db";
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let mut conn = Connection::open("todo.db").await.unwrap();
-    init_db(&mut conn)
-        .await
-        .expect("Failed to initialize database.");
-    conn.close().await.expect("Failed to close connection.");
+    init_db().await.expect("Failed to initialize database.");
 
-    let schema = Schema::build(todo::Query, todo::Mutation, EmptySubscription).finish();
+    let conn = Connection::open(SQLITE_DB_FILE).await.unwrap();
+    let schema = Schema::build(todo::Query, todo::Mutation, EmptySubscription)
+        .data(conn)
+        .finish();
     println!("GraphiQL IDE is Running: http://localhost:5036");
     HttpServer::new(move || {
         App::new()
@@ -28,5 +27,25 @@ async fn main() -> std::io::Result<()> {
     })
     .bind("0.0.0.0:5036")?
     .run()
+    .await?;
+
+    Ok(())
+}
+
+async fn init_db() -> anyhow::Result<()> {
+    let conn = Connection::open(SQLITE_DB_FILE).await.unwrap();
+    conn.call(|conn| {
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS todo (
+                id TEXT NOT NULL PRIMARY KEY,
+                title NOT NULL,
+                description TEXT NOT NULL
+            );",
+            (),
+        )
+    })
     .await
+    .expect("Failed to connect to database.");
+    conn.close().await.expect("Failed to close connection.");
+    Ok(())
 }
