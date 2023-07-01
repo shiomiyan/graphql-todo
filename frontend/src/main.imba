@@ -11,6 +11,20 @@ tag app-counter
 			p:2.5 5 m:6 bd:1px solid transparent rd:4 tween:border-color 250ms
 			bc@hover:indigo5
 
+tag my-tag
+	def load(url, data)
+		let res = await window.fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data)})
+		await res.json!
+	
+	<self>
+		let graphql_query = {
+			operationName: "getAllTodoQuery"
+			query: "query getAllTodoQuery \{ allTodos \{ id title description \} \}"
+		}
+		let resp = await load("http://localhost:5036/graphql", graphql_query)
+		for todo in resp.data.allTodos
+			<li> "{todo.id}"
+
 tag app
 
 	# inline styles with square brackets
@@ -28,6 +42,7 @@ tag app
 		<h1[c:yellow4 fs:3.2em lh:1.1]> "Imba"
 
 		<app-counter>
+		<my-tag>
 
 		css p c:warm1 ws:pre
 		css a td:none
