@@ -1,15 +1,18 @@
-# global css @root ff:Arial c:white/87 bg:black/85
-# global css a c:indigo5 c@hover:indigo6
-# global css body m:0 d:flex ja:center h:100vh
+def load(url, data)
+	let res = await window.fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data)})
+	await res.json!
 
-tag todo
-	def load(url, data)
-		let res = await window.fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data)})
-		await res.json!
+tag Box
+	css pos:relative d:flex ja:center
+		rd:md bg:hue3 c:gray9/70
+		w:40 h:40 m:1 px:4 fs:sm cursor:grab
+		ff:sans
+	x = 0
+	y = 0
+	<self[x:{x}px y:{y}px] @touch.moved.sync(self)> <slot> "box"
 
-	<self>
-		css w:100% p:5 g:5 d:vbox
-
+tag app
+	<self[d:hflex ja:center]>
 		let graphql_query = {
 			operationName: "getAllTodoQuery"
 			query: "query getAllTodoQuery \{ allTodos \{ id title description \} \}"
@@ -18,12 +21,7 @@ tag todo
 
 		for todo in resp.data.allTodos
 			<div>
-				css min-width:30 p:2 bg:teal3 c:gray7 bxs:sm rd:md ta:center
-				"{todo.title}: {todo.description}"
+				<Box[hue:blue]> "{todo.title}: {todo.description}"	
 
-tag app
-	<self>
-		<h1> "Imba"
-		<todo>
-
-imba.mount <app>
+imba.mount do
+	<app>
