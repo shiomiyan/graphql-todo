@@ -1,0 +1,35 @@
+name: graphql-todo
+
+services:
+  backend:
+    build:
+      context: backend
+      target: development
+    ports:
+      - 5036:5036
+    networks:
+      - backend
+    environment:
+      - RUST_LOG=debug
+    volumes:
+      - ./backend/src:/code/src
+      - backend-cache:/code/target
+
+  frontend:
+    build:
+      context: frontend
+      target: development
+    ports:
+      - 5173:5173
+    networks:
+      - frontend
+    volumes:
+      - ./frontend/src:/code/src:ro
+    command: sh -c "npm run dev"
+
+networks:
+  frontend: {}
+  backend: {}
+
+volumes:
+  backend-cache: {}
