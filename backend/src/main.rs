@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(
                 Cors::default()
-                    .allowed_origin("http://localhost:3000")
+                    .allowed_origin("http://localhost:5173")
                     .allowed_origin("http://localhost:5036")
                     .allowed_methods(vec!["GET", "POST"])
                     .allowed_headers(vec![CONTENT_TYPE, AUTHORIZATION, ACCEPT])
